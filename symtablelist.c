@@ -143,7 +143,7 @@ static struct Node *SymTable_find(SymTable_T oSymTable,
    struct Node *pnCurrent;
 
 
-   oSymTable->pnFirst;
+   pnCurrent = oSymTable->pnFirst;
 
    while (pnCurrent != NULL) {
 
