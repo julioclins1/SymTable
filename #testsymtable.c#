@@ -835,6 +835,7 @@ static void testLargeTable(int iBindingCount)
       the same characters as its key. */
    iSmall = 0;
    iLarge = iBindingCount - 1;
+   
    while (iSmall < iLarge)
    {
       /* Get the smallest of the remaining bindings. */
