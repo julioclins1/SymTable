@@ -11,15 +11,30 @@
 /*--------------------------------------------------------------------*/
 
 
+/* Each key and respective value are stored in a Node. Nodes are linked
+   to form a list */
+
 struct Node {
+
+   /* key, owned by implementation through defensive copy */
    const char *pcKey;
+
+   /* value, owned by client */
    void *pvValue;
+
+   /* The address of the next Node */
    struct Node *pnNext;
 };
 
 
+/* SymTable is a structure that points to the first Node */
+
 struct SymTable {
+
+   /* Address of the list's first Node */
    struct Node *pnFirst;
+
+   /* size of Symble Table (total # of Nodes) */
    size_t uLength;
 };
 
@@ -53,7 +68,8 @@ void SymTable_free(SymTable_T oSymTable) {
 
    
    while (pnCurrent != NULL) {
-  
+
+      /* Save pointer to next Node before freeing pnCurrent */
       pnNext = pnCurrent->pnNext;
 
       
@@ -75,6 +91,7 @@ size_t SymTable_getLength(SymTable_T oSymTable) {
    return oSymTable->uLength;
 }
 
+
 int SymTable_put(SymTable_T oSymTable, const char *pcKey,
                  const void *pvValue) {
 
@@ -84,6 +101,7 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey,
    enum {FALSE, TRUE};
    enum {EQUAL};
 
+   
    assert(oSymTable != NULL);
    assert(pcKey != NULL);
 
@@ -93,6 +111,7 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey,
    
    while(pnCurrent != NULL) {
 
+      /* if key is already stored, do not put it again */
       if (strcmp(pnCurrent->pcKey, pcKey) == EQUAL)
          return FALSE;
 
@@ -105,7 +124,7 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey,
    if (pnNewNode == NULL)
       return FALSE;
 
-   
+   /* Makes and assigns defensive copy */
    pcCopy = (char*)malloc(strlen(pcKey) + 1);
    
    if (pcCopy == NULL) {
@@ -115,11 +134,10 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey,
       return FALSE;
    }
 
-   
    pcCopy = strcpy(pcCopy, pcKey);
-
    
    pnNewNode->pcKey = pcCopy;
+
 
    pnNewNode->pvValue = (void*)pvValue;
 
@@ -134,7 +152,9 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey,
    return TRUE;
 }
 
-/* Helper method used by functions below, except remove */
+/* Return Node of corresponding key, if found. oSymTable is the Symble
+   Table object of which pcKey might or might not be a key. If a search
+   hit, it returns a pointer to pcKey's Node. Else, it returns NULL */
 
 static struct Node *SymTable_find(SymTable_T oSymTable,
                                  const char *pcKey) {
@@ -142,6 +162,10 @@ static struct Node *SymTable_find(SymTable_T oSymTable,
    enum {EQUAL};
    struct Node *pnCurrent;
 
+
+   /* Redundant, but just so that critTer doesn't complain */
+   assert(oSymTable != NULL);
+   assert(pcKey != NULL);
 
    pnCurrent = oSymTable->pnFirst;
 
@@ -224,6 +248,7 @@ void *SymTable_remove(SymTable_T oSymTable, const char *pcKey) {
 
       if (strcmp(pnCurrent->pcKey, pcKey) == EQUAL) {
 
+         /* if Node is the first on the list */
          if (pnPrev == NULL)
             oSymTable->pnFirst = pnCurrent->pnNext;
 
@@ -266,7 +291,8 @@ void SymTable_map(SymTable_T oSymTable,
    
    while (pnCurrent != NULL) {
 
-      (*pfApply)((void*)pnCurrent->pcKey, (void*)pnCurrent->pvValue,
+      (*pfApply)((void*)pnCurrent->pcKey,
+                 (void*)pnCurrent->pvValue,
                  (void*)pvExtra);
 
       pnCurrent = pnCurrent->pnNext;

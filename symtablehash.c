@@ -10,21 +10,43 @@
 
 /*--------------------------------------------------------------------*/
 
+/* Sequence of bucket counts for Symble Table expansion */
 
 static const size_t auBucketCount[] = {509, 1021, 2039, 4093, 8191,
                                        16381, 32749, 65521};
 
 
+/* Each key and respective value are stored in a Binding. Bindings
+   whose keys hash to the same code are linked to form a list */
+
 struct Binding {
+
+   /* key, owned by implementation through defensive copy */
    const char *pcKey;
+
+   /* value, owned by client */
    void *pvValue;
+
+   /* The address of the next Binding on the list of same-hash-code
+      Bindings */
    struct Binding *pbNext;
 };
 
 
+/* SymTable is a structure that points to all separate chains' first
+   Bindings. That is, to all Bindings that are first on their list of
+   same-hash-code Bindings */
+
 struct SymTable {
+
+   /* Index of auBucketCount[] leading to current bucket count for 
+      SymTable object */
    size_t uBucketIndex;
+
+   /* Pointer to the addresses of separate chains' first Bindings */
    struct Binding **ppbBuckets;
+
+   /* size of Symble Table (total # of Bindings) */
    size_t uLength;
 };
 
@@ -40,7 +62,7 @@ SymTable_T SymTable_new(void) {
    if (oSymTable == NULL)
       return NULL;
 
-   
+
    oSymTable->ppbBuckets = (struct Binding**)
       calloc(sizeof(struct Binding*), auBucketCount[0]);
 
@@ -76,9 +98,11 @@ void SymTable_free(SymTable_T oSymTable) {
 
       
       while (pbCurrent != NULL) {
-      
+
+         /* Save pointer to next Binding before freeing pbCurrent */
          pbNext = pbCurrent->pbNext;
 
+         
          free((void*)pbCurrent->pcKey);
 
          free(pbCurrent);
@@ -102,7 +126,8 @@ size_t SymTable_getLength(SymTable_T oSymTable) {
 
 
 /* Return a hash code for pcKey that is between 0 and uBucketCount-1,
-   inclusive. */
+   inclusive. pcKey is a pointer to the key which will be hashed.
+   uBucketCount is the current bucket count. */
 
 static size_t SymTable_hash(const char *pcKey, size_t uBucketCount)
 {
@@ -119,56 +144,56 @@ static size_t SymTable_hash(const char *pcKey, size_t uBucketCount)
 }
 
 
-static size_t SymTable_nextBucket(size_t uCurrentIndex) {
+/* Helper function that expands Symble Table to next bucket count.
+   oSymTable is a pointer to the Symble Table that will be expanded. 
+   If not enough memory for expansion, oSymTable does not change */
 
-   const size_t MAX_INDEX = sizeof(auBucketCount)/sizeof(size_t) - 1;
+static void SymTable_grow(SymTable_T oSymTable) {
 
-   if (uCurrentIndex == MAX_INDEX)
-      return uCurrentIndex;
-
-   else
-      return ++uCurrentIndex;
-}
-
-
-static SymTable_T SymTable_grow(SymTable_T oSymTable) {
-
+   size_t uCurrentIndex;
    size_t uNextIndex;
-   size_t uCurrentIndex = oSymTable->uBucketIndex;
-   SymTable_T oTempSymTable;
+   size_t uNextCount;
+   size_t i;
+ 
    struct Binding* pbCurrent;
    struct Binding** ppbTemp;
-   size_t i;
+
+   /* oTempSymTable is a placeholder SymTable_T object. We will
+      put all oSymTable Bindings into it, but with the new hash codes */
+   
+   SymTable_T oTempSymTable;
 
 
-   uNextIndex = SymTable_nextBucket(uCurrentIndex);
+   uCurrentIndex = oSymTable->uBucketIndex; 
+   uNextIndex = uCurrentIndex + 1;
+   uNextCount = auBucketCount[uNextIndex];
 
 
    oTempSymTable = (SymTable_T)malloc(sizeof(struct SymTable));
    
 
    if (oTempSymTable == NULL)
-      return oSymTable;
+      return;
 
    
    oTempSymTable->ppbBuckets =
-      (struct Binding**)calloc(sizeof(struct Binding*),
-                               auBucketCount[uNextIndex]);
+      (struct Binding**)calloc(sizeof(struct Binding*), uNextCount);
 
    if (oTempSymTable->ppbBuckets == NULL) {
 
       free(oTempSymTable);
-      return oSymTable;
+      return;
    }
 
   
    oTempSymTable->uLength = 0;
    oTempSymTable->uBucketIndex = uNextIndex;
 
-   
-   for (i = 0; i < auBucketCount[uCurrentIndex]; i++) {
+   /* Reinserts all key-value pairs into placeholder, but now hashing
+      from 0 to uNextCount - 1 */
 
-      
+   for (i = 0; i < auBucketCount[uCurrentIndex]; i++) {
+  
       pbCurrent = oSymTable->ppbBuckets[i];
 
       
@@ -182,7 +207,8 @@ static SymTable_T SymTable_grow(SymTable_T oSymTable) {
       }
    }
 
-   /* REVIEW */
+   /* Assigns expanded hash table to client's oSymTable. Frees
+      both the old hash table and the placeholder oTempSymTable */
 
    ppbTemp = oSymTable->ppbBuckets;
    oSymTable->ppbBuckets = oTempSymTable->ppbBuckets;
@@ -194,13 +220,18 @@ static SymTable_T SymTable_grow(SymTable_T oSymTable) {
    
    SymTable_free(oTempSymTable);
 
-   return oSymTable;
+
 }
 
 
 int SymTable_put(SymTable_T oSymTable, const char *pcKey,
                  const void *pvValue) {
 
+   size_t uMAX_INDEX;
+   size_t uCurrentIndex;
+   size_t uBucketCount;
+   size_t uLength;
+   
 
    size_t uIndex;
    char *pcCopy;
@@ -214,14 +245,27 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey,
    assert(pcKey != NULL);
 
    
-   if (oSymTable->uLength == auBucketCount[oSymTable->uBucketIndex])
-      oSymTable = SymTable_grow(oSymTable);
+   uMAX_INDEX = sizeof(auBucketCount)/sizeof(size_t) - 1;
+   
+   uCurrentIndex = oSymTable->uBucketIndex;
+   
+   uBucketCount = auBucketCount[uCurrentIndex];
+   
+   uLength = oSymTable->uLength;
+   
 
    
-   uIndex = SymTable_hash(pcKey,
-                          auBucketCount[oSymTable->uBucketIndex]);
+   if ((uLength == uBucketCount) && (uCurrentIndex < uMAX_INDEX)) {
+      
+      SymTable_grow(oSymTable);
+      
+      uBucketCount = auBucketCount[oSymTable->uBucketIndex];
+   }
 
-
+   
+   
+   uIndex = SymTable_hash(pcKey, uBucketCount);
+   
    
    pbCurrent = (oSymTable->ppbBuckets[uIndex]);
    
@@ -266,23 +310,34 @@ int SymTable_put(SymTable_T oSymTable, const char *pcKey,
    oSymTable->ppbBuckets[uIndex] = pbNewBinding;
    
  
-
    oSymTable->uLength++;
 
+   
    return TRUE;
 }
 
+/* Return Binding of corresponding key, if found. oSymTable is the
+   Symble Table object of which pcKey might or might not be a key. If
+   a search hit, it returns a pointer to pcKey's Binding. Else, it
+   returns NULL */
 
 static struct Binding *SymTable_find(SymTable_T oSymTable,
                                      const char *pcKey) {
 
    size_t uIndex;
+   size_t uBucketCount;
    struct Binding *pbCurrent;
    enum {EQUAL};
 
+   /* redundant, but just so that critTer doesn't complain */
+   assert(oSymTable != NULL);
+   assert(pcKey != NULL);
    
-   uIndex = SymTable_hash(pcKey,
-                          auBucketCount[oSymTable->uBucketIndex]);
+   
+   uBucketCount = auBucketCount[oSymTable->uBucketIndex];
+
+                                
+   uIndex = SymTable_hash(pcKey, uBucketCount);
 
    
    pbCurrent = oSymTable->ppbBuckets[uIndex];
@@ -298,6 +353,7 @@ static struct Binding *SymTable_find(SymTable_T oSymTable,
 
    return NULL;
 }
+
 
 void *SymTable_replace(SymTable_T oSymTable, const char *pcKey,
                        const void *pvValue) {
@@ -355,19 +411,23 @@ void *SymTable_get(SymTable_T oSymTable, const char *pcKey) {
 void *SymTable_remove(SymTable_T oSymTable, const char *pcKey) {
 
 
-   struct Binding *pbPrev;
-   struct Binding *pbCurrent;
+   size_t uIndex;
+   size_t uBucketCount;
    void *pvValue;
    enum {EQUAL};
-   size_t uIndex;
+   
+   struct Binding *pbPrev;
+   struct Binding *pbCurrent;
 
 
    assert(oSymTable != NULL);
    assert(pcKey != NULL);
 
    
-   uIndex = SymTable_hash(pcKey,
-                          auBucketCount[oSymTable->uBucketIndex]);
+   uBucketCount = auBucketCount[oSymTable->uBucketIndex];
+
+   
+   uIndex = SymTable_hash(pcKey, uBucketCount);
 
 
    
@@ -379,6 +439,7 @@ void *SymTable_remove(SymTable_T oSymTable, const char *pcKey) {
 
       if(strcmp(pbCurrent->pcKey, pcKey) == EQUAL) {
 
+         /* if Binding is the first on the separate chain */
          if (pbPrev == NULL)
             oSymTable->ppbBuckets[uIndex] = pbCurrent->pbNext;
 
@@ -410,14 +471,17 @@ void SymTable_map(SymTable_T oSymTable,
                                   void *pvExtra), const void *pvExtra) {
 
    size_t i;
+   size_t uBucketCount;
    struct Binding *pbCurrent;
 
    assert(oSymTable != NULL);
    assert(pfApply != NULL);
 
+   
+   uBucketCount = auBucketCount[oSymTable->uBucketIndex];
 
-   for (i = 0; i < auBucketCount[oSymTable->uBucketIndex]; i++) {
-
+   
+   for (i = 0; i < uBucketCount; i++) {
 
       pbCurrent = oSymTable->ppbBuckets[i];
 

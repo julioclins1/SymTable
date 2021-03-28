@@ -3,12 +3,12 @@ Assignment 3 readme File
 ------------------------------------------------------------------------
 What is your name?
 
-
+Julio Lins
 
 ------------------------------------------------------------------------
 How many late days are you using on this assignment?
 
-
+None
 
 ------------------------------------------------------------------------
 What authorized sources of information did you use to complete
@@ -16,7 +16,17 @@ the assignment? COPY THE LIST of authorized sources of information
 given in the "Policies" web page to this section of the readme file,
 and edit it as appropriate.
 
+The course's lectures.
 
+The course's precepts.
+
+The course's website.
+
+Documents that are referenced directly by the course's website.
+Such documents include the course's lecture slides and precept handouts.
+
+The course's current staff members outside of class time through office
+hours.
 
 ------------------------------------------------------------------------
 What unauthorized sources of information did you use to complete the
@@ -30,12 +40,12 @@ interaction, may additionally require the interaction being reported
 to the Committee on Discipline. Write "None" if you used no
 unauthorized sources of information.
 
-
+None
 
 ------------------------------------------------------------------------
 What is your assessment of the assignment? Was it helpful? Was it fun?
 
-
+It was nice. Felt like cos 226 again
 
 ------------------------------------------------------------------------
 (optional) What information can you provide about your submission that
@@ -50,7 +60,7 @@ disagreements with them? Copy the splint warnings here, and express your
 disagreement after each warning. If there are no warnings, then write
 "None."
 
-
+None
 
 ------------------------------------------------------------------------
 What warnings does critTer generate on symtablelist.c, and what are your
@@ -58,7 +68,19 @@ disagreements with them? Copy the critTer warnings here, and express
 your disagreement after each warning. If there are no warnings, then
 write "None."
 
+   symtablelist.c: line 96: medium priority:
+   Do you want to validate 'pvValue' through an assert?
 
+   symtablelist.c: line 184: medium priority:
+      Do you want to validate 'pvValue' through an assert?
+
+   symtablelist.c: line 281: medium priority:
+      Do you want to validate 'pvExtra' through an assert?
+
+
+Since we have no information on the type of pvValue or pvExtra (they
+are void*, after all), we cannot assert that they are not NULL. In
+fact, they could be NULL. So we should know make such validation.
 
 ------------------------------------------------------------------------
 What warnings does splint generate on symtablehash.c, and what are your
@@ -66,7 +88,7 @@ disagreements with them? Copy the splint warnings here, and express your
 disagreement after each warning. If there are no warnings, then write
 "None."
 
-
+None
 
 ------------------------------------------------------------------------
 What warnings does critTer generate on symtablehash.c, and what are your
@@ -74,6 +96,21 @@ disagreements with them? Copy the critTer warnings here, and express
 your disagreement after each warning. If there are no warnings, then
 write "None."
 
+Checking symtablehash.c
+
+   symtablehash.c: line 228: medium priority:
+      Do you want to validate 'pvValue' through an assert?
+
+   symtablehash.c: line 359: medium priority:
+      Do you want to validate 'pvValue' through an assert?
+
+   symtablehash.c: line 471: medium priority:
+      Do you want to validate 'pvExtra' through an assert?
+
+
+Same as before. pvValue or pvExtra are void*, so we don't know what
+types they might be, or what values they might take. Thus we cannot
+assert that they are NULL, since NULL is a valid option.
 
 
 ------------------------------------------------------------------------
@@ -83,22 +120,22 @@ implementation, (2) your non-expanding hash table implementation, and
 (3) your expanding hash table implementation? Fill in the blanks.
 
 The linked list implementation with:
--- 50 bindings consumed ________ seconds.
--- 500 bindings consumed ________ seconds.
--- 5000 bindings consumed ________ seconds.
--- 50000 bindings consumed ________ seconds.
--- 500000 bindings consumed ________ seconds.
+-- 50 bindings consumed 0.000000 seconds.
+-- 500 bindings consumed 0.010000 seconds.
+-- 5000 bindings consumed 1.010000 seconds.
+-- 50000 bindings consumed 100.5000 seconds.
+-- 500000 bindings consumed More than 5 minutes.
 
 The non-expanding hash table implementation with:
--- 50 bindings consumed ________ seconds.
--- 500 bindings consumed ________ seconds.
--- 5000 bindings consumed ________ seconds.
--- 50000 bindings consumed ________ seconds.
--- 500000 bindings consumed ________ seconds.
+-- 50 bindings consumed 0.000000 seconds.
+-- 500 bindings consumed 0.000000 seconds.
+-- 5000 bindings consumed 0.010000 seconds.
+-- 50000 bindings consumed 0.390000 seconds.
+-- 500000 bindings consumed 68.09000 seconds.
 
 The expanding hash table implementation with:
--- 50 bindings consumed ________ seconds.
--- 500 bindings consumed ________ seconds.
--- 5000 bindings consumed ________ seconds.
--- 50000 bindings consumed ________ seconds.
--- 500000 bindings consumed ________ seconds.
+-- 50 bindings consumed 0.000000 seconds.
+-- 500 bindings consumed 0.000000 seconds.
+-- 5000 bindings consumed 0.020000 seconds.
+-- 50000 bindings consumed 0.210000 seconds.
+-- 500000 bindings consumed 2.060000 seconds.
